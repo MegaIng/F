@@ -1,0 +1,44 @@
+file: statement+
+statement: (_value|assignment) ";"
+assignment: NAME ":=" _value
+escaped_value: code_block
+             | list
+             | "(" (PREFIX_OPERATOR|INFIX_OPERATOR) ")"
+             | "(" _value ")"
+             | PREFIX_OPERATOR escaped_value -> prefix_operator
+             | STRING
+             | NUMBER
+             | NAME
+             | escaped_value "()" -> empty_call
+             | infix_operator
+_value: call
+     | escaped_value
+call: escaped_value escaped_value+
+list: "{" escaped_value* "}"
+code_block: "[" [parameter] statement* _value "]"
+parameter: "|" NAME+ "|"
+
+infix_operator: _infix_operator_1|_infix_operator_2|_infix_operator_3|_infix_operator_4
+
+_infix_operator_1: (_infix_operator_2|_infix_operator_3|_infix_operator_4|escaped_value) INFIX_OPERATOR_1 (_infix_operator_2|_infix_operator_3|_infix_operator_4|escaped_value)
+
+_infix_operator_2: (_infix_operator_3|_infix_operator_4|escaped_value) INFIX_OPERATOR_2 (_infix_operator_2|_infix_operator_4|escaped_value)
+
+_infix_operator_3: (_infix_operator_4|escaped_value) INFIX_OPERATOR_3 (_infix_operator_4|escaped_value)
+
+_infix_operator_4: escaped_value INFIX_OPERATOR_4 escaped_value
+
+PREFIX_OPERATOR: "!"
+
+INFIX_OPERATOR: INFIX_OPERATOR_1|INFIX_OPERATOR_2|INFIX_OPERATOR_3|INFIX_OPERATOR_4
+INFIX_OPERATOR_1: "<-"
+INFIX_OPERATOR_2: "<"|"<="|"="|">"|">="
+INFIX_OPERATOR_3: "*"|"/"|"%"
+INFIX_OPERATOR_4: "+"|"-"
+
+STRING: /"(?:[^"\\]|\\.)*"/
+NAME: /\b[a-zA-Z_][a-zA-Z_0-9]*\b/
+
+%import common.NUMBER
+%import common.WS
+%ignore WS
