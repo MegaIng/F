@@ -3,7 +3,7 @@ from decimal import Decimal
 from functools import reduce
 from typing import Tuple
 
-from f import f_function, Value, CodeBlock, Number
+from f import f_function, Value, CodeBlock, Number, List, Null, f_constant, Interpreter
 
 
 class Reference(Value):
@@ -58,6 +58,14 @@ def while_(condition: CodeBlock, action: CodeBlock) -> Value:
     return ret
 
 
+@f_function
+def foreach(action: CodeBlock, *args: List) -> Value:
+    ret = None
+    for v in zip(*(l.elements for l in args)):
+        ret = action.call(v)
+    return ret
+
+
 @f_function("=")
 def equal(first: Value, second: Value) -> Value:
     return Boolean(first == second)
@@ -81,3 +89,20 @@ def mul(*args: Number) -> Value:
 @f_function("-")
 def sub(*args: Number) -> Value:
     return Number(reduce(operator.sub, (arg.number for arg in args)))
+
+
+@f_function("+")
+def add(*args: Number) -> Value:
+    return Number(reduce(operator.add, (arg.number for arg in args)))
+
+
+@f_function("print")
+def print_(*args: Value) -> Value:
+    print(*args)
+    return Null
+
+
+f_constant("Null", Null)
+
+def finish_init():
+    Interpreter.add_layer()

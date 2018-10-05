@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import collections
+import re
 from collections import ChainMap
 from decimal import Decimal
-from typing import Tuple, MutableMapping, Callable, Union
-import re
+from typing import Tuple, Callable, Union
 
 import lark
-from lark import Tree, Transformer
+from lark import Transformer
 from lark.lexer import Token
-from lark.tree import pydot__tree_to_png
 
 f = lark.Lark(open("f.grammar").read(), start="file")
 
@@ -31,7 +29,7 @@ class Interpreter:
     def set(cls, name: str, v: Value):
         # print("set", name, v)
         if name in cls._variables.maps[0]:
-            raise NameError
+            raise NameError(f"'{name}' is already taken")
         else:
             cls._variables[name] = v
 
@@ -72,6 +70,20 @@ class Value(Statement):
         return self.get()
 
 
+class Null(Value):
+    def __repr__(self):
+        return "Null"
+
+    def call(self, args: Tuple[Value, ...]):
+        raise TypeError
+
+    def get(self):
+        return self
+
+
+Null = Null()
+
+
 class Call(Value):
     def __init__(self, fun: Value, args: Tuple[Value, ...]):
         self.fun = fun
@@ -85,6 +97,20 @@ class Call(Value):
 
     def get(self):
         return self.fun.call(tuple(arg.get() for arg in self.args))
+
+
+class List(Value):
+    def __init__(self, args: Tuple[Value, ...]):
+        self.elements = list(args)
+
+    def __repr__(self):
+        return f"{{{', '.join(repr(a) for a in self.elements)}}}"
+
+    def call(self, args: Tuple[Value, ...]):
+        raise TypeError
+
+    def get(self):
+        return List(tuple(arg.get() for arg in self.elements))
 
 
 class Number(Value):
@@ -197,6 +223,10 @@ def f_function(arg: Union[Callable, str]):
         return inner
 
 
+def f_constant(name: str, value: Value):
+    Interpreter.set(name, value)
+
+
 class FTransformer(Transformer):
     def escaped_value(self, children):
         assert len(children) == 1
@@ -214,11 +244,16 @@ class FTransformer(Transformer):
         assert len(children) == 1
         return children[0]
 
-    def infix_operator(self, children):
-        assert len(children) == 3, children
-        return Call(Name(children[1].value), (children[0], children[2]))
+    def infix_operation(self, children):
+        v = Call(Name(children[1].value), (children[0], children[2]))
+        if len(children) > 3:
+            return self.infix_operation((v, *children[3:]))
+        else:
+            return v
 
-    def call(self, children):
+    infix_operation_1 = infix_operation_2 = infix_operation_3 = infix_operation_4 = infix_operation_5 = infix_operation
+
+    def simple_call(self, children):
         return Call(children[0], tuple(children[1:]))
 
     def empty_call(self, children):
@@ -229,6 +264,18 @@ class FTransformer(Transformer):
             return CodeBlock(children[0], tuple(children[1:]))
         else:
             return CodeBlock((), tuple(children))
+
+    ec_code_block = code_block
+
+    def ec_parameter(self, children):
+        names = tuple(v.value for v in children if isinstance(v, Token))
+        values = tuple(v for v in children if isinstance(v, Value))
+        return names, values
+
+    def extended_call(self, children):
+        fun, *children, code_block = children
+        (i, (code_block.parameter, values)), = ((i, v) for i, v in enumerate(children) if isinstance(v, tuple))
+        return Call(fun, (*children[:i], code_block, *values, *children[i + 1:]))
 
     def parameter(self, children):
         return tuple(p.value for p in children)
@@ -244,5 +291,10 @@ class FTransformer(Transformer):
     def file(self, children):
         return CodeBlock((), tuple(children))
 
+    def list(self, children):
+        return List(children)
+
 
 import stdlib
+
+stdlib.finish_init()
