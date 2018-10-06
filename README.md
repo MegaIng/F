@@ -4,6 +4,7 @@ An Implementation of F by @ac1235 (https://ac1235.github.io/f.html)
 ## Implementation Details
 
 * Syntax completly like in the documentation by @ac1235 (All of his example can be parsed)
+  * Wrong scoping (He uses lexical scoping, Currently implemented is dynamic scoping) (Will be changed)
 * Many functions are missing (as example the `with*` family)
 * Numbers are always the `Decimal` type from python.
 * Strings have simple escaping (will be changed) and are written between `"`
