@@ -185,6 +185,7 @@ class Number(Value):
 
 escaped_values = {
     "a": "\a",
+    "b": "\b",
     "f": "\f",
     "n": "\n",
     "r": "\r",
@@ -201,15 +202,12 @@ class String(Value):
     def __init__(self, raw_string: str):
         assert raw_string[0] == raw_string[-1] == '"'
         self.raw_data = raw_string
+        self.data = re.sub(r'\\(.)', lambda m: escaped_values.get(m.group(1), m.group(1)), self.raw_data[1:-1])
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.data == other.data
-
-    @property
-    def data(self):
-        return re.sub(r'\\(.)', r'\1', self.raw_data[1:-1])
 
     def call(self, args: Tuple[Value, ...]):
         raise TypeError
@@ -218,7 +216,7 @@ class String(Value):
         return self
 
     def __repr__(self):
-        return self.raw_data
+        return self.data
 
 
 class Name(Value):

@@ -18,3 +18,8 @@ i := reference 5;
 print (!i) (postIncr i) (!i); // prints 5 5 6
 i <- 5;
 print (!i) (preIncr i) (!i); // prints 5 6 6
+
+print "Hello World";
+print "Hello\nWorld";
+print "Hello\tWorld";
+print "Hello\bWorld";
