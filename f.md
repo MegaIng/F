@@ -210,7 +210,7 @@ repeat [
 ] while [!count >= 0];
 
 // count up
-count := reference 0;
+count <- 0;
 repeat [
     count <- !count + 1;
     print (!count)
@@ -280,7 +280,7 @@ foreach |x ({1 2 3}) y ({4 5 6})| [
 This syntax can be used to express the `let` family of Lisp macros.
 
 ```
-do |x (5) y (10)| [ x + y ] // => 15
+do |x (5) y (10)| [ x + y ]; // => 15
 // == do [|x y| x + y ] 5 10
 ```
 

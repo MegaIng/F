@@ -19,8 +19,9 @@ escaped_value: code_block
              | NAME
              | escaped_value "()" -> empty_call
 
-?call: simple_call|extended_call
+?call: simple_call|extended_call|variadic_call
 simple_call: escaped_value escaped_value+
+!variadic_call: escaped_value escaped_value* ELLIPSIS escaped_value*
 
 // ec = extended_call
 extended_call: escaped_value escaped_value* ec_parameter escaped_value* ec_code_block
@@ -29,20 +30,20 @@ ec_code_block: "[" _statement* _value "]"
 
 list: "{" escaped_value* "}"
 code_block: "[" [parameter] _statement* _value "]"
-parameter: "|" NAME+ "|"
+parameter: "|" NAME* [ELLIPSIS] "|"
 
 PREFIX_OPERATOR: "!"|"-"|"+"
 
 INFIX_OPERATOR: INFIX_OPERATOR_1|INFIX_OPERATOR_2|INFIX_OPERATOR_3|INFIX_OPERATOR_4
 INFIX_OPERATOR_1: "<-"
-INFIX_OPERATOR_2: "<"|"<="|"="|">"|">="
+INFIX_OPERATOR_2: "<"|"<="|"="|">="|">"
 INFIX_OPERATOR_3: "*"|"/"|"%"
 INFIX_OPERATOR_4: "+"|"-"
 
 STRING: /"(?:[^"\\]|\\.)*"/
 NAME: /\b[a-zA-Z_][a-zA-Z_0-9]*\b/
 COMMENT: "//" /.*/ NEWLINE
-
+ELLIPSIS: "..."
 
 %import common.NUMBER
 %import common.WS

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections import ChainMap
 from decimal import Decimal
-from typing import Tuple, Callable, Union
+from typing import Tuple, Callable, Union, Iterable
 
 import lark
 from lark import Transformer
@@ -17,17 +17,14 @@ class Interpreter:
 
     @classmethod
     def add_layer(cls):
-        # print("add_layer")
         cls._variables = cls._variables.new_child()
 
     @classmethod
     def remove_layer(cls):
-        # print("remove_layer")
         cls._variables = cls._variables.parents
 
     @classmethod
     def set(cls, name: str, v: Value):
-        # print("set", name, v)
         if name in cls._variables.maps[0]:
             raise NameError(f"'{name}' is already taken")
         else:
@@ -35,7 +32,6 @@ class Interpreter:
 
     @classmethod
     def get(cls, name: str):
-        # print("get", name)
         if name not in cls._variables:
             raise NameError(name)
         else:
@@ -90,7 +86,7 @@ class Call(Value):
         self.args = args
 
     def __repr__(self):
-        return f"{self.fun!r}({','.join(repr(a) for a in self.args)})"
+        return f"{self.fun!r}({', '.join(repr(a) for a in self.args)})"
 
     def call(self, args: Tuple[Value, ...]):
         return self.get().call(args)
@@ -99,8 +95,25 @@ class Call(Value):
         return self.fun.call(tuple(arg.get() for arg in self.args))
 
 
+class VariadicCall(Value):
+    def __init__(self, fun: Value, pre_args: Tuple[Value, ...], post_args: Tuple[Value, ...]):
+        self.post_args = tuple(post_args)
+        self.pre_args = tuple(pre_args)
+        self.fun = fun
+
+    def __repr__(self):
+        return f"{self.fun!r}({', '.join(str(a) for a in self.pre_args+('...',)+self.post_args)})"
+
+    def call(self, args: Tuple[Value, ...]):
+        return self.get().call(args)
+
+    def get(self):
+        return self.fun.call(
+            tuple(arg.get() for arg in (*self.pre_args, *Interpreter.get('...').elements, *self.post_args)))
+
+
 class List(Value):
-    def __init__(self, args: Tuple[Value, ...]):
+    def __init__(self, args: Iterable[Value, ...]):
         self.elements = list(args)
 
     def __repr__(self):
@@ -121,6 +134,26 @@ class Number(Value):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.number == other.number
+
+    def __ge__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.number >= other.number
+
+    def __gt__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.number > other.number
+
+    def __lt__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.number < other.number
+
+    def __le__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.number <= other.number
 
     def call(self, args: Tuple[Value, ...]):
         raise TypeError
@@ -176,18 +209,38 @@ class CodeBlock(Value):
         self.statements = statements
 
     def __repr__(self):
-        return "(" + ",".join(self.parameter) + "){" + ";".join(repr(s) for s in self.statements) + "}"
+        return "(" + ", ".join(self.parameter) + "){" + ";".join(repr(s) for s in self.statements) + "}"
 
-    def call(self, args: Tuple[Value, ...]):
-        if len(args) != len(self.parameter):
-            raise ValueError
-        Interpreter.add_layer()
-        for p, v in zip(self.parameter, args):
-            Interpreter.set(p, v)
+    def _apply_arguments(self, arguments: Tuple[Value, ...]):
+        if '...' not in self.parameter:
+            if len(arguments) != len(self.parameter):
+                raise ValueError(f"Not enough arguments (Expected {len(self.parameter)}, got {len(arguments)})")
+            for p, a in zip(self.parameter, arguments):
+                Interpreter.set(p, a)
+        else:
+            i = self.parameter.index('...')
+            pre, post = self.parameter[:i], self.parameter[i + 1:]
+            if len(arguments) < len(pre) + len(post):
+                raise ValueError(f"Not enough arguments (Expected at least {len(pre)+len(post)}, got {len(arguments)})")
+            arg_pre, arg_post = arguments[:len(pre)], (arguments[-len(post):] if post else ())
+            arg_var = (arguments[len(pre):-len(post)] if post else arguments[len(pre):])
+            for p, a in zip(pre + post, arg_pre + arg_post):
+                Interpreter.set(p, a)
+            Interpreter.set('...', List(arg_var))
+
+    def call(self, args: Tuple[Value, ...], implicit_print=False,scoped=True):
+        if not scoped and self.parameter:
+            raise ValueError("CodeBlocks with parameter have to be scoped")
+        if scoped:
+            Interpreter.add_layer()
+            self._apply_arguments(args)
         ret = None
         for st in self.statements:
             ret = st.execute()
-        Interpreter.remove_layer()
+            if implicit_print:
+                print(ret)
+        if scoped:
+            Interpreter.remove_layer()
         return ret
 
     def get(self):
@@ -259,6 +312,10 @@ class FTransformer(Transformer):
     def empty_call(self, children):
         return Call(children[0], ())
 
+    def variadic_call(self, children):
+        i, = (i for i, v in enumerate(children) if isinstance(v, Token) and v.value == '...')
+        return VariadicCall(children[0], children[1:i], children[i + 1:])
+
     def code_block(self, children):
         if isinstance(children[0], tuple):
             return CodeBlock(children[0], tuple(children[1:]))
@@ -295,6 +352,10 @@ class FTransformer(Transformer):
         return List(children)
 
 
-import stdlib
+def parse(data: str) -> CodeBlock:
+    return FTransformer().transform(f.parse(data))
 
-stdlib.finish_init()
+
+import builtin
+
+builtin.finish_init()
