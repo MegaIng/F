@@ -13,6 +13,5 @@ An Implementation of F by @ac1235 (https://ac1235.github.io/f.html)
 ## How to use
 
 * install the latest version of [python 3 (at least 3.7)](https://www.python.org/downloads/)
-* run `pip install lark-parser`
-* execute `test.py` via python
-  * code changes have to be done manualy inside `test.py` at the moment
+* execute `pip install lark-parser`
+* execute `python f.py test.f`

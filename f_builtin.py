@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import Tuple, IO
 
-from f import f_function, Value, CodeBlock, Number, List, Null, f_constant, Interpreter, parse, String
+from f_parser import f_function, Value, CodeBlock, Number, List, Null, f_constant, Interpreter, parse, String
 
 
 class Reference(Value):
@@ -174,10 +174,12 @@ def withOpenFile(action: CodeBlock, file_name: String, mode: String) -> Value:
     with open(file_name.data, mode.data) as f:
         return action.call((IOReference(f),))
 
+
 @f_function
-def writeLine(f:IOReference,line:String)->Value:
-    f.file.write(line.data+"\n")
+def writeLine(f: IOReference, line: String) -> Value:
+    f.file.write(line.data + "\n")
     return Null
+
 
 def finish_init():
     Interpreter.add_layer()
