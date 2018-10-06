@@ -181,6 +181,25 @@ def writeLine(f: IOReference, line: String) -> Value:
     return Null
 
 
+@f_function
+def get(data: List, index: Number) -> Value:
+    if not index.number % 1 == 0:
+        raise ValueError
+    return data.elements[int(index.number)]
+
+
+@f_function
+def append(data: List, new: Value) -> List:
+    return List(data.elements + [new])
+
+
+@f_function
+def insert(data: List, index: Number, value: Value) -> List:
+    if not index.number % 1 == 0:
+        raise ValueError
+    return List(data.elements[:int(index.number)] + [value] + data.elements[int(index.number):])
+
+
 def finish_init():
     Interpreter.add_frame()
     parse(open("stdlib.f").read()).call((), scoped=False)

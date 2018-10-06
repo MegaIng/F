@@ -3,11 +3,10 @@ An Implementation of F by @ac1235 (https://ac1235.github.io/f.html)
 
 ## Implementation Details
 
-* Syntax completly like in the documentation by @ac1235 (All of his example can be parsed)
-* Many functions are missing (as example the `with*` family)
+* Syntax completely like in the documentation by @ac1235 (All of his example can be parsed)
 * Numbers are always the `Decimal` type from python.
 * Strings have simple escaping (will be changed) and are written between `"`
-* Many fundamental functions are missing (Many, many (No list access as example))
+* Some fundamental functions are still missing
 
 ## How to use
 
