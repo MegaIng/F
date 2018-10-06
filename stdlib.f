@@ -11,3 +11,8 @@ if := [|condition action ...|
 else := [|...|
     do ...
 ];
+
+repeat := [|action conditional ...|
+    do action;
+    do conditional ... action
+];

@@ -40,12 +40,12 @@ INFIX_OPERATOR_2: "<"|"<="|"="|">="|">"
 INFIX_OPERATOR_3: "*"|"/"|"%"
 INFIX_OPERATOR_4: "+"|"-"
 
-STRING: /"(?:[^"\\]|\\.)*"/
+STRING: /"(?:[^"\\\n]|\\.)*"/
 NAME: /\b[a-zA-Z_][a-zA-Z_0-9]*\b/
 COMMENT: "//" /.*/ NEWLINE
 ELLIPSIS: "..."
 
-%import common.NUMBER
+NUMBER: /(?<![0-9])([0-9]+(\.[0-9]*)?|[0-9]*\.[0-9]+)(e[0-9]+)?(?![0-9])/
 %import common.WS
 %import common.NEWLINE
 %ignore COMMENT

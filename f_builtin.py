@@ -182,5 +182,5 @@ def writeLine(f: IOReference, line: String) -> Value:
 
 
 def finish_init():
-    Interpreter.add_layer()
+    Interpreter.add_frame()
     parse(open("stdlib.f").read()).call((), scoped=False)

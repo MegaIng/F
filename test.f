@@ -1,10 +1,20 @@
-factorial := [|n|
-    total := reference 1;
-    i := reference n;
-    while [!i > 0] [
-        total <- !total * !i;
-        i <- !i - 1
-    ];
-    !total
+preModifier := [|fun|
+    [|ref|
+        ref <- fun (!ref);
+        !ref ]
 ];
-print (factorial 4);
+postModifier := [|fun|
+    [|ref|
+        value := !ref;
+        ref <- fun (!ref);
+        value ]
+];
+
+postIncr := postModifier [|x| x + 1];
+preIncr := preModifier [|x| x + 1];
+
+// usage example
+i := reference 5;
+print (!i) (postIncr i) (!i); // prints 5 5 6
+i <- 5;
+print (!i) (preIncr i) (!i); // prints 5 6 6
