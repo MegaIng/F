@@ -1,6 +1,6 @@
 import re
 
-from f_parser import parse
+from f.interpreter.__init__ import f_compile
 
 with open("f.md") as file:
     data = file.read()
@@ -8,9 +8,9 @@ with open("f.md") as file:
 for example in re.finditer("```\n(.*?)\n```", data, re.DOTALL):
     example = example.group(1) + "\n"
     print(example)
-    print(parse(example))
+    print(f_compile(example))
     try:
-        parse(example).call((), True)
+        f_compile(example).call((), True)
     except NameError as e:
         print("NameError", e)
     print("-" * 100)

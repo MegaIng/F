@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import Tuple, IO
 
-from f_parser import f_function, Value, CodeBlock, Number, List, Null, f_constant, Interpreter, parse, String
+from f.interpreter import f_function, Value, CodeBlock, Number, List, Null, f_constant, Interpreter, f_compile, String
 
 
 class Reference(Value):
@@ -202,4 +202,4 @@ def insert(data: List, index: Number, value: Value) -> List:
 
 def finish_init():
     Interpreter.add_frame()
-    parse(open("stdlib.f").read()).call((), scoped=False)
+    f_compile(open("stdlib.f").read()).call((), scoped=False)

@@ -4,12 +4,9 @@ import re
 from decimal import Decimal
 from typing import Tuple, Callable, Union, Iterable, Dict, Optional
 
-import lark
-from lark import Transformer
 from lark.lexer import Token
-from lark.tree import pydot__tree_to_png
 
-f = lark.Lark(open("f.grammar").read(), start="file")
+import f
 
 
 class Frame:
@@ -317,7 +314,7 @@ def f_constant(name: str, value: Value):
     Interpreter.set(name, value)
 
 
-class FTransformer(Transformer):
+class FInterpreterTransformer(f.BaseFLarkTransformer):
     def escaped_value(self, children):
         assert len(children) == 1
         c = children[0]
@@ -329,10 +326,6 @@ class FTransformer(Transformer):
             else:
                 return Name(c.value)
         return c
-
-    def statement(self, children):
-        assert len(children) == 1
-        return children[0]
 
     def infix_operation(self, children):
         v = Call(Name(children[1].value), (children[0], children[2]))
@@ -389,12 +382,11 @@ class FTransformer(Transformer):
         return List(children)
 
 
-def parse(data: str) -> CodeBlock:
+def f_compile(data: str) -> CodeBlock:
     tree = f.parse(data)
-    pydot__tree_to_png(tree, "test.png")
-    return FTransformer().transform(tree)
+    return FInterpreterTransformer().transform(tree)
 
 
-import f_builtin
+from . import builtins
 
-f_builtin.finish_init()
+builtins.finish_init()
