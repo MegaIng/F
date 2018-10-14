@@ -1,8 +1,8 @@
 import re
 
-from f.interpreter.__init__ import f_compile
+from f.interpreter import f_compile
 
-with open("f.md") as file:
+with open("f/grammar/f.md") as file:
     data = file.read()
 
 for example in re.finditer("```\n(.*?)\n```", data, re.DOTALL):

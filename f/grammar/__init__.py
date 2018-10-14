@@ -1,3 +1,4 @@
+from collections import namedtuple
 from pathlib import Path
 from typing import Tuple
 
@@ -5,11 +6,13 @@ import lark
 from lark import Transformer as LarkTransformer
 from lark.lexer import Token
 
-f = lark.Lark(open(Path(__file__).with_name("f.grammar")).read(), start="file")
+from f import util
+
+f_parser = lark.Lark(open(Path(__file__).with_name("f.grammar")).read(), start="file")
 
 
 def parse(text: str) -> lark.Tree:
-    return f.parse(text)
+    return f_parser.parse(text)
 
 
 class BaseFTransformer:
@@ -25,7 +28,10 @@ class BaseFTransformer:
     def call(self, func, args: Tuple):
         raise NotImplementedError
 
-    def code_block(self, parameter: Tuple, statements: Tuple, return_value):
+    def code_block(self, parameters: Tuple, statements: Tuple, return_value):
+        raise NotImplementedError
+
+    def parameter(self, name: str):
         raise NotImplementedError
 
     def variadic_parameter(self, name: str):
@@ -34,10 +40,13 @@ class BaseFTransformer:
     def variadic_argument(self, name: str):
         raise NotImplementedError
 
-    def list(self, content: str):
+    def list(self, content: Tuple):
         raise NotImplementedError
 
     def file(self, statements: Tuple):
+        raise NotImplementedError
+
+    def assignment(self, name: str, value):
         raise NotImplementedError
 
 
@@ -93,16 +102,16 @@ class BaseFLarkTransformer(LarkTransformer):
     def code_block(self, children):
         raise NotImplementedError
 
-    def ex_code_block(self, children):
+    def ec_code_block(self, children):
         return self.code_block(children)
 
-    def ec_parameter(self, children):
+    def ec_parameters(self, children):
         raise NotImplementedError
 
     def extended_call(self, children):
         raise NotImplementedError
 
-    def parameter(self, children):
+    def parameters(self, children):
         raise NotImplementedError
 
     def assignment(self, children):
@@ -116,3 +125,81 @@ class BaseFLarkTransformer(LarkTransformer):
 
     def list(self, children):
         raise NotImplementedError
+
+
+_ec_parameters = namedtuple("_ec_parameters", "names values")
+_parameters = namedtuple("_parameters", "content")
+
+
+class FLarkTransformer(BaseFLarkTransformer):
+    def __init__(self, transformer: BaseFTransformer):
+        self.transformer = transformer
+
+    def ev_string(self, data: str):
+        return self.transformer.string(util.unescape_string(data[1:-1]))
+
+    def ev_number(self, data: str):
+        return self.transformer.number(data)
+
+    def ev_name(self, data: str):
+        return self.transformer.name(data)
+
+    def infix_operation(self, children):
+        left, operator, right, *tail = children
+        left = self.transformer.call(self.transformer.name(operator.value), (left, right))
+        while tail:
+            operator, right, *tail = tail
+            left = self.transformer.call(self.transformer.name(operator.value), (left, right))
+        return left
+
+    def simple_call(self, children):
+        return self.transformer.call(children[0], tuple(children[1:]))
+
+    def empty_call(self, children):
+        return self.transformer.call(children[0], ())
+
+    def variadic_call(self, children):
+        i, = (i for i, v in enumerate(children) if isinstance(v, Token) and v.value == '...')
+        return self.transformer.call(children[0], (
+            *children[1:i], self.transformer.variadic_argument(children[i].value), *children[i + 1:]))
+
+    def code_block(self, children):
+        if isinstance(children[0], _parameters):
+            return self.transformer.code_block(children[0].content, tuple(children[1:-1]), children[-1])
+        else:
+            return self.transformer.code_block((), tuple(children[:-1]), children[-1])
+
+    def ec_parameters(self, children):
+        names = tuple(self.transformer.parameter(v.value) for v in children if isinstance(v, Token))
+        values = tuple(v for v in children if not isinstance(v, Token))
+        return _ec_parameters(names, values)
+
+    def ec_code_block(self, children):
+        return tuple(children)
+
+    def extended_call(self, children):
+        fun, *children, code_block = children
+        (i, (parameters, values)), = ((i, v) for i, v in enumerate(children) if isinstance(v, _ec_parameters))
+        return self.transformer.call(fun, (
+            *children[:i],
+            self.transformer.code_block(parameters, code_block[:-1], code_block[-1]),
+            *values,
+            *children[i + 1:]))
+
+    def parameters(self, children):
+        return _parameters(tuple(
+            self.transformer.parameter(t.value) if not t.value.startswith(
+                "...") else self.transformer.variadic_parameter(t.value)
+            for t in children))
+
+    def assignment(self, children):
+        return self.transformer.assignment(children[0].value, children[1])
+
+    def prefix_operator(self, children):
+        return self.transformer.call(self.transformer.name(children[0].value), (children[1],))
+
+    def file(self, children):
+        return self.transformer.file(tuple(children))
+
+    def list(self, children):
+        return self.transformer.list(tuple(children))

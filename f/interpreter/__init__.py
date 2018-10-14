@@ -231,23 +231,24 @@ class Name(Value):
 
 
 class CodeBlock(Value):
-    def __init__(self, parameter: Iterable[str, ...], statements: Iterable[Statement, ...], parent_frame: Frame = None):
-        self.parameter = tuple(parameter)
+    def __init__(self, parameters: Iterable[str, ...], statements: Iterable[Statement, ...],
+                 parent_frame: Frame = None):
+        self.parameters = tuple(parameters)
         self.statements = tuple(statements)
         self.parent_frame = parent_frame
 
     def __repr__(self):
-        return "(" + ", ".join(self.parameter) + "){" + ";".join(repr(s) for s in self.statements) + "}"
+        return "(" + ", ".join(self.parameters) + "){" + ";".join(repr(s) for s in self.statements) + "}"
 
     def _apply_arguments(self, arguments: Tuple[Value, ...]):
-        if '...' not in self.parameter:
-            if len(arguments) != len(self.parameter):
-                raise ValueError(f"Not enough arguments (Expected {len(self.parameter)}, got {len(arguments)})")
-            for p, a in zip(self.parameter, arguments):
+        if '...' not in self.parameters:
+            if len(arguments) != len(self.parameters):
+                raise ValueError(f"Not enough arguments (Expected {len(self.parameters)}, got {len(arguments)})")
+            for p, a in zip(self.parameters, arguments):
                 Interpreter.set(p, a)
         else:
-            i = self.parameter.index('...')
-            pre, post = self.parameter[:i], self.parameter[i + 1:]
+            i = self.parameters.index('...')
+            pre, post = self.parameters[:i], self.parameters[i + 1:]
             if len(arguments) < len(pre) + len(post):
                 raise ValueError(f"Not enough arguments (Expected at least {len(pre)+len(post)}, got {len(arguments)})")
             arg_pre, arg_post = arguments[:len(pre)], (arguments[-len(post):] if post else ())
@@ -257,8 +258,8 @@ class CodeBlock(Value):
             Interpreter.set('...', List(arg_var))
 
     def call(self, args: Tuple[Value, ...], implicit_print=False, scoped=True):
-        if not scoped and self.parameter:
-            raise ValueError("CodeBlocks with parameter have to be scoped")
+        if not scoped and self.parameters:
+            raise ValueError("CodeBlocks with parameters have to be scoped")
         if scoped:
             if self.parent_frame is None:
                 Interpreter.add_frame()
@@ -278,7 +279,7 @@ class CodeBlock(Value):
         if self.parent_frame is not None:
             return self
         else:
-            return self.__class__(self.parameter, self.statements, Interpreter.frames[-1])
+            return self.__class__(self.parameters, self.statements, Interpreter.frames[-1])
 
 
 class BuiltinFunction(Value):
@@ -354,17 +355,17 @@ class FInterpreterTransformer(f.BaseFLarkTransformer):
 
     ec_code_block = code_block
 
-    def ec_parameter(self, children):
+    def ec_parameters(self, children):
         names = tuple(v.value for v in children if isinstance(v, Token))
         values = tuple(v for v in children if isinstance(v, Value))
         return names, values
 
     def extended_call(self, children):
         fun, *children, code_block = children
-        (i, (code_block.parameter, values)), = ((i, v) for i, v in enumerate(children) if isinstance(v, tuple))
+        (i, (code_block.parameters, values)), = ((i, v) for i, v in enumerate(children) if isinstance(v, tuple))
         return Call(fun, (*children[:i], code_block, *values, *children[i + 1:]))
 
-    def parameter(self, children):
+    def parameters(self, children):
         return tuple(p.value for p in children)
 
     def assignment(self, children):

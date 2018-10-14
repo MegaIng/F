@@ -24,13 +24,13 @@ simple_call: escaped_value escaped_value+
 !variadic_call: escaped_value escaped_value* ELLIPSIS escaped_value*
 
 // ec = extended_call
-extended_call: escaped_value escaped_value* ec_parameter escaped_value* ec_code_block
-ec_parameter: "|" (NAME "(" _value ")")* NAME* "|"
+extended_call: escaped_value escaped_value* ec_parameters escaped_value* ec_code_block
+ec_parameters: "|" (NAME "(" _value ")")* NAME* "|"
 ec_code_block: "[" _statement* _value "]"
 
 list: "{" escaped_value* "}"
-code_block: "[" [parameter] _statement* _value "]"
-parameter: "|" NAME* [ELLIPSIS] "|"
+code_block: "[" [parameters] _statement* [_value] "]"
+parameters: "|" NAME* [ELLIPSIS] "|"
 
 PREFIX_OPERATOR: "!"|"-"|"+"
 

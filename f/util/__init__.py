@@ -1,4 +1,4 @@
-from typing import re
+import re
 
 escaped_values = {
     "a": "\a",
