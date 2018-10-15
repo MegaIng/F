@@ -3,10 +3,10 @@ An Implementation of F by @ac1235 (https://ac1235.github.io/f.html)
 
 ## Implementation Details
 
-* Syntax completely like in the documentation by @ac1235 (All of his example can be parsed)
+* Syntax completely like in the documentation by @ac1235 (All of his example can be parsed and executed)
 * Numbers are always the `Decimal` type from python.
-* Strings have simple escaping (will be changed) and are written between `"`
-* Some fundamental functions are still missing
+* Strings have (almost) C-like escaping and are written between `"`
+* Variadic Value Syntax, allowing for List unpacking (`...(<List-Value>)`)
 
 ## How to use
 
