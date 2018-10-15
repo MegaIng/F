@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import re
 from decimal import Decimal
 from typing import Tuple, Callable, Union, Iterable, Dict, Optional
 
-from lark.lexer import Token
-
 import f
+from f.grammar import FLarkTransformer
 
 
 class Frame:
@@ -107,38 +105,41 @@ class Call(Value):
         return self.get().call(args)
 
     def get(self):
-        return self.fun.call(tuple(arg.get() for arg in self.args))
+        return self.fun.call(tuple(arg.get() for arg in unpack_arguments(self.args)))
 
 
-class VariadicCall(Value):
-    def __init__(self, fun: Value, pre_args: Tuple[Value, ...], post_args: Tuple[Value, ...]):
-        self.post_args = tuple(post_args)
-        self.pre_args = tuple(pre_args)
-        self.fun = fun
+class VariadicValue(Value):
+    def __init__(self, value: Value):
+        self.value = value
 
     def __repr__(self):
-        return f"{self.fun!r}({', '.join(str(a) for a in self.pre_args+('...',)+self.post_args)})"
+        return f"...({self.value!r})"
 
     def call(self, args: Tuple[Value, ...]):
-        return self.get().call(args)
+        raise TypeError
 
-    def get(self):
-        return self.fun.call(
-            tuple(arg.get() for arg in (*self.pre_args, *Interpreter.get('...').elements, *self.post_args)))
+    def get(self) -> Value:
+        raise ValueError
+
+
+def unpack_arguments(arguments: Tuple[Value, ...]) -> Tuple[Value, ...]:
+    return tuple(e
+                 for a in arguments
+                 for e in (a.value.get().elements if isinstance(a, VariadicValue) else (a,)))
 
 
 class List(Value):
     def __init__(self, args: Iterable[Value, ...]):
-        self.elements = list(args)
+        self.elements = tuple(args)
 
     def __repr__(self):
-        return f"{{{', '.join(repr(a) for a in self.elements)}}}"
+        return f"[{', '.join(repr(a) for a in self.elements)}]"
 
     def call(self, args: Tuple[Value, ...]):
         raise TypeError
 
     def get(self):
-        return List(tuple(arg.get() for arg in self.elements))
+        return List(tuple(arg.get() for arg in unpack_arguments(self.elements)))
 
 
 class Number(Value):
@@ -196,10 +197,8 @@ escaped_values = {
 
 
 class String(Value):
-    def __init__(self, raw_string: str):
-        assert raw_string[0] == raw_string[-1] == '"'
-        self.raw_data = raw_string
-        self.data = re.sub(r'\\(.)', lambda m: escaped_values.get(m.group(1), m.group(1)), self.raw_data[1:-1])
+    def __init__(self, data: str):
+        self.data = data
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -241,13 +240,13 @@ class CodeBlock(Value):
         return "(" + ", ".join(self.parameters) + "){" + ";".join(repr(s) for s in self.statements) + "}"
 
     def _apply_arguments(self, arguments: Tuple[Value, ...]):
-        if '...' not in self.parameters:
+        if not any(p.startswith("...") for p in self.parameters):
             if len(arguments) != len(self.parameters):
                 raise ValueError(f"Not enough arguments (Expected {len(self.parameters)}, got {len(arguments)})")
             for p, a in zip(self.parameters, arguments):
                 Interpreter.set(p, a)
         else:
-            i = self.parameters.index('...')
+            (i, vp), = ((i, p) for i, p in enumerate(self.parameters) if p.startswith("..."))
             pre, post = self.parameters[:i], self.parameters[i + 1:]
             if len(arguments) < len(pre) + len(post):
                 raise ValueError(f"Not enough arguments (Expected at least {len(pre)+len(post)}, got {len(arguments)})")
@@ -255,10 +254,10 @@ class CodeBlock(Value):
             arg_var = (arguments[len(pre):-len(post)] if post else arguments[len(pre):])
             for p, a in zip(pre + post, arg_pre + arg_post):
                 Interpreter.set(p, a)
-            Interpreter.set('...', List(arg_var))
+            Interpreter.set('...' if vp == '...' else vp[3:], List(arg_var))
 
     def call(self, args: Tuple[Value, ...], implicit_print=False, scoped=True):
-        if not scoped and self.parameters:
+        if not scoped and self.parameters and self.parameters != ('...',):
             raise ValueError("CodeBlocks with parameters have to be scoped")
         if scoped:
             if self.parent_frame is None:
@@ -315,77 +314,49 @@ def f_constant(name: str, value: Value):
     Interpreter.set(name, value)
 
 
-class FInterpreterTransformer(f.BaseFLarkTransformer):
-    def escaped_value(self, children):
-        assert len(children) == 1
-        c = children[0]
-        if isinstance(c, Token):
-            if c.type == "STRING":
-                return String(c.value)
-            elif c.type == "NUMBER":
-                return Number(Decimal(c.value))
-            else:
-                return Name(c.value)
-        return c
+class FInterpreterTransformer(f.BaseFTransformer):
+    def string(self, content: str):
+        return String(content)
 
-    def infix_operation(self, children):
-        v = Call(Name(children[1].value), (children[0], children[2]))
-        if len(children) > 3:
-            return self.infix_operation((v, *children[3:]))
-        else:
-            return v
+    def number(self, number: str):
+        return Number(Decimal(number))
 
-    infix_operation_1 = infix_operation_2 = infix_operation_3 = infix_operation_4 = infix_operation_5 = infix_operation
+    def name(self, name: str):
+        return Name(name)
 
-    def simple_call(self, children):
-        return Call(children[0], tuple(children[1:]))
+    def call(self, func, args: Tuple):
+        return Call(func, args)
 
-    def empty_call(self, children):
-        return Call(children[0], ())
+    def code_block(self, parameters: Tuple, statements: Tuple, return_value):
+        return CodeBlock(parameters, (*statements, return_value), None)
 
-    def variadic_call(self, children):
-        i, = (i for i, v in enumerate(children) if isinstance(v, Token) and v.value == '...')
-        return VariadicCall(children[0], children[1:i], children[i + 1:])
+    def parameter(self, name: str):
+        return name
 
-    def code_block(self, children):
-        if isinstance(children[0], tuple):
-            return CodeBlock(children[0], tuple(children[1:]))
-        else:
-            return CodeBlock((), tuple(children))
+    def variadic_parameter(self, name: str):
+        return name
 
-    ec_code_block = code_block
+    def variadic_value(self, value):
+        return VariadicValue(value)
 
-    def ec_parameters(self, children):
-        names = tuple(v.value for v in children if isinstance(v, Token))
-        values = tuple(v for v in children if isinstance(v, Value))
-        return names, values
+    def list(self, content: Tuple):
+        return List(content)
 
-    def extended_call(self, children):
-        fun, *children, code_block = children
-        (i, (code_block.parameters, values)), = ((i, v) for i, v in enumerate(children) if isinstance(v, tuple))
-        return Call(fun, (*children[:i], code_block, *values, *children[i + 1:]))
+    def file(self, statements: Tuple):
+        return CodeBlock(('...',), statements)
 
-    def parameters(self, children):
-        return tuple(p.value for p in children)
-
-    def assignment(self, children):
-        assert len(children) == 2
-        return Assignment(children[0].value, children[1])
-
-    def prefix_operator(self, children):
-        assert len(children) == 2
-        return Call(Name(children[0].value), (children[1],))
-
-    def file(self, children):
-        return CodeBlock((), tuple(children))
-
-    def list(self, children):
-        return List(children)
+    def assignment(self, name: str, value):
+        return Assignment(name, value)
 
 
 def f_compile(data: str) -> CodeBlock:
     tree = f.parse(data)
-    return FInterpreterTransformer().transform(tree)
+    return FLarkTransformer(FInterpreterTransformer()).transform(tree)
+
+
+def f_eval(data: str, argv: Tuple[str, ...] = ()):
+    code = f_compile(data)
+    code.call(tuple(String(s) for s in argv))
 
 
 from . import builtins

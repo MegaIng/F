@@ -66,10 +66,10 @@ def store_in_reference(var: Reference, data: Value) -> Value:
 
 @f_function("while")
 def while_(condition: CodeBlock, action: CodeBlock) -> List:
-    ret = List(())
+    ret = []
     while condition.call(()):
-        ret.elements.append(action.call(()))
-    return ret
+        ret.append(action.call(()))
+    return List(ret)
 
 
 @f_function
@@ -134,6 +134,7 @@ def or_(*args: Value) -> Value:
 
 @f_function("do")
 def do(fun: Value, *args: Value) -> Value:
+    print(fun, *args)
     return fun.call(args)
 
 

@@ -1,8 +1,11 @@
 import ast
 from collections import namedtuple
-from typing import Tuple, List
+from types import CodeType
+from typing import Tuple, List, overload, TextIO, Dict, Any, Union
+from warnings import warn
 
 import f
+from f.ast_compiler.builtins import f_globals
 from f.grammar import FLarkTransformer
 
 _varpar = namedtuple("_vararg", "content")
@@ -41,8 +44,8 @@ class FASTTransformer(f.BaseFTransformer):
         return ((ast.FunctionDef(f"_{self._counter-1}", parameters, statements, []),),
                 ast.Name(f"_{self._counter-1}", ast.Load()))
 
-    def variadic_argument(self, name: str):
-        return (), ast.Starred(ast.Name(name, ast.Load()), ast.Load())
+    def variadic_value(self, value):
+        return value[0], ast.Starred(value[1], ast.Load())
 
     def list(self, content: Tuple):
         return tuple(st for c in content for st in c[0]), ast.List([c[1] for c in content], ast.Load())
@@ -56,13 +59,47 @@ class FASTTransformer(f.BaseFTransformer):
     _counter = 0
 
 
-def f_compile(text: str) -> ast.AST:
-    return FLarkTransformer(FASTTransformer()).transform(f.parse(text))
+@overload
+def f_compile(text: str, file_name: str = "<unknown>") -> CodeType: raise NotImplementedError
 
 
-from f.ast_compiler.builtins import f_globals
+@overload
+def f_compile(file: TextIO, file_name: str = None) -> CodeType: raise NotImplementedError
 
-stdlib = f_compile(open(r"C:\Users\tramp\PycharmProjects\F\stdlib.f").read())
-eval(compile(stdlib, "<test>", 'exec'), f_globals)
-data = f_compile(open(r"C:\Users\tramp\PycharmProjects\F\test.f").read())
-eval(compile(data, "<test>", 'exec'), f_globals)
+
+def f_compile(text, file_name=None) -> CodeType:
+    if file_name is None:
+        try:
+            file_name = text.name
+        except AttributeError:
+            file_name = "<unknwon>"
+    try:
+        text = text.read()
+    except AttributeError:
+        pass
+    tree = FLarkTransformer(FASTTransformer()).transform(f.parse(text))
+    return compile(tree, file_name, 'exec', dont_inherit=False)
+
+
+@overload
+def f_eval(code: CodeType, argv: Tuple[str, ...] = None, f_locals: Dict[str, Any] = None): raise NotImplementedError
+
+
+@overload
+def f_eval(code: Union[TextIO, str], argv: Tuple[str, ...] = None, f_locals: Dict[str, Any] = None,
+           file_name: str = None):
+    raise NotImplementedError
+
+
+def f_eval(code, argv=None, f_locals=None, file_name=None):
+    if not isinstance(code, CodeType):
+        code = f_compile(code, file_name)
+    elif file_name is not None:
+        warn('`file_name` for already compiled code. `file_name` will be ignored.')
+    if argv is None:
+        argv = (file_name,)
+    f_globals['...'] = argv
+    eval(code, f_globals, f_locals)
+
+
+f_eval(open(r"stdlib.f"))

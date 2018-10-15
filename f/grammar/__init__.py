@@ -37,7 +37,7 @@ class BaseFTransformer:
     def variadic_parameter(self, name: str):
         raise NotImplementedError
 
-    def variadic_argument(self, name: str):
+    def variadic_value(self, value):
         raise NotImplementedError
 
     def list(self, content: Tuple):
@@ -96,7 +96,7 @@ class BaseFLarkTransformer(LarkTransformer):
     def empty_call(self, children):
         raise NotImplementedError
 
-    def variadic_call(self, children):
+    def variadic_value(self, children):
         raise NotImplementedError
 
     def code_block(self, children):
@@ -158,10 +158,11 @@ class FLarkTransformer(BaseFLarkTransformer):
     def empty_call(self, children):
         return self.transformer.call(children[0], ())
 
-    def variadic_call(self, children):
-        i, = (i for i, v in enumerate(children) if isinstance(v, Token) and v.value == '...')
-        return self.transformer.call(children[0], (
-            *children[1:i], self.transformer.variadic_argument(children[i].value), *children[i + 1:]))
+    def variadic_value(self, children):
+        if len(children) == 1:
+            return self.transformer.variadic_value(self.transformer.name(children[0].value))
+        else:
+            return self.transformer.variadic_value(children[1])
 
     def code_block(self, children):
         if isinstance(children[0], _parameters):

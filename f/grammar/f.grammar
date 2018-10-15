@@ -17,11 +17,11 @@ escaped_value: code_block
              | STRING
              | NUMBER
              | NAME
+             | ELLIPSIS ["(" _value ")"] -> variadic_value
              | escaped_value "()" -> empty_call
 
-?call: simple_call|extended_call|variadic_call
+?call: simple_call|extended_call
 simple_call: escaped_value escaped_value+
-!variadic_call: escaped_value escaped_value* ELLIPSIS escaped_value*
 
 // ec = extended_call
 extended_call: escaped_value escaped_value* ec_parameters escaped_value* ec_code_block
@@ -30,7 +30,7 @@ ec_code_block: "[" _statement* _value "]"
 
 list: "{" escaped_value* "}"
 code_block: "[" [parameters] _statement* [_value] "]"
-parameters: "|" NAME* [ELLIPSIS] "|"
+parameters: "|" NAME* [NAMED_ELLIPSIS|ELLIPSIS] "|"
 
 PREFIX_OPERATOR: "!"|"-"|"+"
 
@@ -44,6 +44,7 @@ STRING: /"(?:[^"\\\n]|\\.)*"/
 NAME: /\b[a-zA-Z_][a-zA-Z_0-9]*\b/
 COMMENT: "//" /.*/ NEWLINE
 ELLIPSIS: "..."
+NAMED_ELLIPSIS: ELLIPSIS NAME
 
 NUMBER: /(?<![0-9])([0-9]+(\.[0-9]*)?|[0-9]*\.[0-9]+)(e[0-9]+)?(?![0-9])/
 %import common.WS
