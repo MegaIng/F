@@ -198,3 +198,7 @@ do [|...inner|
 do [
   print (a := 5 + 6);
 ];
+
+do [
+  print "No semicolon"
+]

@@ -1,6 +1,6 @@
-file: _statement+
-_statement: _value ";"
+file: _statements
 
+_statements: _value (";" _value)* [";"]
 _value: assignment|infix_operation_1
 assignment: NAME ":=" _value
 
@@ -28,10 +28,10 @@ simple_call: escaped_value escaped_value+
 // ec = extended_call
 extended_call: escaped_value escaped_value* ec_parameters escaped_value* ec_code_block
 ec_parameters: "|" (NAME "(" _value ")")* NAME* "|"
-ec_code_block: "[" _statement* _value "]"
+ec_code_block: "[" _statements "]"
 
 list: "{" escaped_value* "}"
-code_block: "[" [parameters] _statement* [_value] "]"
+code_block: "[" [parameters] _statements "]"
 parameters: "|" NAME* [NAMED_ELLIPSIS|ELLIPSIS] "|"
 
 PREFIX_OPERATOR: "!"|"-"|"+"
