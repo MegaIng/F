@@ -45,7 +45,7 @@ Boolean._false_value = super(Boolean, Boolean).__new__(Boolean)
 
 f_constant('true', Boolean._true_value)
 f_constant('false', Boolean._false_value)
-f_constant("Null", Null)
+f_constant('Null', Null)
 
 
 @f_function
@@ -134,7 +134,6 @@ def or_(*args: Value) -> Value:
 
 @f_function("do")
 def do(fun: Value, *args: Value) -> Value:
-    print(fun, *args)
     return fun.call(args)
 
 

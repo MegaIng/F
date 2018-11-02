@@ -56,18 +56,6 @@ class Statement:
         raise NotImplementedError
 
 
-class Assignment(Statement):
-    def __init__(self, name: str, value: Value):
-        self.name = name
-        self.value = value
-
-    def __repr__(self):
-        return f"{self.name} = {self.value}"
-
-    def execute(self):
-        Interpreter.set(self.name, self.value.get())
-
-
 class Value(Statement):
     def call(self, args: Tuple[Value, ...]):
         raise NotImplementedError
@@ -77,6 +65,23 @@ class Value(Statement):
 
     def execute(self):
         return self.get()
+
+
+class Assignment(Value):
+    def __init__(self, name: str, value: Value):
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        return f"{self.name} = {self.value}"
+
+    def call(self, args: Tuple[Value, ...]):
+        return self.get().call(args)
+
+    def get(self):
+        v = self.value.get()
+        Interpreter.set(self.name, v)
+        return v
 
 
 class Null(Value):

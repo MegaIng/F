@@ -28,7 +28,11 @@ class FASTTransformer(f.BaseFTransformer):
         return (), ast.arg(name, None)
 
     def variadic_parameter(self, name: str):
-        return (), _varpar(ast.arg(name, None))
+        assert name.startswith("...")
+        if len(name) == 3:
+            return (), _varpar(ast.arg(name, None))
+        else:
+            return (), _varpar(ast.arg(name[3:], None))
 
     def call(self, func, args: Tuple):
         return (*func[0], *(st for a in args for st in a[0])), ast.Call(func[1], [a[1] for a in args], [])
@@ -54,7 +58,7 @@ class FASTTransformer(f.BaseFTransformer):
         return ast.fix_missing_locations(ast.Module(self.make_statements(statements)))
 
     def assignment(self, name: str, value):
-        return (*value[0], ast.Assign([ast.Name(name, ast.Store())], value[1]),), None
+        return (*value[0], ast.Assign([ast.Name(name, ast.Store())], value[1]),), ast.Name(name, ast.Load())
 
     _counter = 0
 

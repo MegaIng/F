@@ -194,3 +194,7 @@ do [|...inner|
   print ...(inner);
   print (...);
 ] 1 2 3;
+
+do [
+  print (a := 5 + 6);
+];

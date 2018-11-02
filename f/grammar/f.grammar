@@ -1,7 +1,9 @@
 file: _statement+
-_statement: (_value|assignment) ";"
+_statement: _value ";"
+
+_value: assignment|infix_operation_1
 assignment: NAME ":=" _value
-_value: infix_operation_1
+
 ?infix_operation_1: infix_operation_2 (INFIX_OPERATOR_1 infix_operation_2)*
 ?infix_operation_2: infix_operation_3 (INFIX_OPERATOR_2 infix_operation_3)*
 ?infix_operation_3: infix_operation_4 (INFIX_OPERATOR_3 infix_operation_4)*
