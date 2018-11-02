@@ -142,6 +142,11 @@ def mul(*args: Number) -> Value:
     return Number(reduce(operator.mul, (arg.number for arg in args)))
 
 
+@f_function("**")
+def mul(*args: Number) -> Value:
+    return Number(reduce(operator.mul, (arg.number for arg in args)))
+
+
 @f_function("-")
 def sub(*args: Number) -> Value:
     return Number(reduce(operator.sub, (arg.number for arg in args)))

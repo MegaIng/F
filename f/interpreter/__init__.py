@@ -354,13 +354,18 @@ class FInterpreterTransformer(f.BaseFTransformer):
         return Assignment(name, value)
 
 
-def f_compile(data: str) -> CodeBlock:
+def f_compile(data: str, debug=0) -> CodeBlock:
     tree = f.parse(data)
+    if debug > 0:
+        from lark.tree import pydot__tree_to_png
+        pydot__tree_to_png(debug, 'debug.png')
     return FLarkTransformer(FInterpreterTransformer()).transform(tree)
 
 
-def f_eval(data: str, argv: Tuple[str, ...] = ()):
-    code = f_compile(data)
+def f_eval(data: str, argv: Tuple[str, ...] = (), debug=0):
+    code = f_compile(data, debug - 1)
+    if debug:
+        print(code)
     code.call(tuple(String(s) for s in argv))
 
 

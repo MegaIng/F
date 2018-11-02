@@ -121,6 +121,11 @@ def mul(*args):
     return reduce(operator.mul, (arg for arg in args))
 
 
+@f_function("**")
+def mul(*args):
+    return reduce(operator.pow, (arg for arg in args))
+
+
 @f_function("-")
 def sub(*args):
     return reduce(operator.sub, (arg for arg in args))

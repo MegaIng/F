@@ -1,21 +1,22 @@
-file: _statements
+file: _statements _EOI
 
 _statements: _value (";" _value)* [";"]
 _value: assignment|infix_operation_1
 assignment: NAME ":=" _value
 
-?infix_operation_1: infix_operation_2 (INFIX_OPERATOR_1 infix_operation_2)*
-?infix_operation_2: infix_operation_3 (INFIX_OPERATOR_2 infix_operation_3)*
-?infix_operation_3: infix_operation_4 (INFIX_OPERATOR_3 infix_operation_4)*
-?infix_operation_4: infix_operation_5 (INFIX_OPERATOR_4 infix_operation_5)*
-?infix_operation_5: _call_value (NAME ":" _call_value)*
+!?infix_operation_1: infix_operation_2 ("<-" infix_operation_2)*
+!?infix_operation_2: infix_operation_3 (("<"|"<="|"="|">="|">") infix_operation_3)*
+!?infix_operation_3: infix_operation_4 (("**") infix_operation_4)*
+!?infix_operation_4: infix_operation_5 (("*"|"/"|"%") infix_operation_5)*
+!?infix_operation_5: infix_operation_6 (("+"|"-") infix_operation_6)*
+?infix_operation_6: _call_value (NAME ":" _call_value)*
 _call_value: call
      | escaped_value
-escaped_value: code_block
+!escaped_value: code_block
              | list
-             | "(" (PREFIX_OPERATOR|INFIX_OPERATOR) ")"
+             | "(" ("<-"|"<"|"<="|"="|">="|">"|"**"|"*"|"/"|"%"|"+"|"-"|"!") ")"
              | "(" _value ")"
-             | PREFIX_OPERATOR escaped_value -> prefix_operator
+             | ("!"|"-"|"+") escaped_value -> prefix_operator
              | STRING
              | NUMBER
              | NAME
@@ -34,22 +35,15 @@ list: "{" escaped_value* "}"
 code_block: "[" [parameters] _statements "]"
 parameters: "|" NAME* [NAMED_ELLIPSIS|ELLIPSIS] "|"
 
-PREFIX_OPERATOR: "!"|"-"|"+"
-
-INFIX_OPERATOR: INFIX_OPERATOR_1|INFIX_OPERATOR_2|INFIX_OPERATOR_3|INFIX_OPERATOR_4
-INFIX_OPERATOR_1: "<-"
-INFIX_OPERATOR_2: "<"|"<="|"="|">="|">"
-INFIX_OPERATOR_3: "*"|"/"|"%"
-INFIX_OPERATOR_4: "+"|"-"
 
 STRING: /"(?:[^"\\\n]|\\.)*"/
 NAME: /\b[a-zA-Z_][a-zA-Z_0-9]*\b/
-COMMENT: "//" /.*/ NEWLINE
+COMMENT: "//" /.*\n/
 ELLIPSIS: "..."
 NAMED_ELLIPSIS: ELLIPSIS NAME
 
 NUMBER: /(?<![0-9])([0-9]+(\.[0-9]*)?|[0-9]*\.[0-9]+)(e[0-9]+)?(?![0-9])/
+_EOI: "<EOI>"
 %import common.WS
-%import common.NEWLINE
 %ignore COMMENT
 %ignore WS

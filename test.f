@@ -61,7 +61,7 @@ do [
 ];
 do [
   if := [|condition action ...|
-      do (either (condition ()) action [do ...])
+      do (either condition () action [do ...])
   ];
 
   else := [|...|
@@ -91,7 +91,7 @@ do [
   ];
 
   until := [|condition action|
-      while [not (condition ())] [
+      while [not condition ()] [
           do action
       ]
   ];
@@ -197,6 +197,11 @@ do [|...inner|
 
 do [
   print (a := 5 + 6);
+];
+
+do [
+  print ("5**4");
+  print (5**4);
 ];
 
 do [

@@ -8,7 +8,14 @@ from lark.lexer import Token
 
 from f import util
 
-f_parser = lark.Lark(open(Path(__file__).with_name("f.grammar")).read(), start="file")
+
+class EOI:
+    def process(self, stream):
+        yield from stream
+        yield Token('_EOI', '')
+
+
+f_parser = lark.Lark(open(Path(__file__).with_name("f.grammar")).read(), postlex=EOI(), start="file", lexer="standard")
 
 
 def parse(text: str) -> lark.Tree:
@@ -61,7 +68,9 @@ class BaseFLarkTransformer(LarkTransformer):
         raise NotImplementedError
 
     def escaped_value(self, children):
-        assert len(children) == 1
+        if len(children) == 3 and children[0].value == '(' and children[2].value == ')':
+            _, *children, _ = children
+        assert len(children) == 1, children
         c = children[0]
         if isinstance(c, Token):
             if c.type == "STRING":
@@ -88,6 +97,9 @@ class BaseFLarkTransformer(LarkTransformer):
         return self.infix_operation(children)
 
     def infix_operation_5(self, children):
+        return self.infix_operation(children)
+
+    def infix_operation_6(self, children):
         return self.infix_operation(children)
 
     def simple_call(self, children):

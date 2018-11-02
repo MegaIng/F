@@ -64,14 +64,14 @@ class FASTTransformer(f.BaseFTransformer):
 
 
 @overload
-def f_compile(text: str, file_name: str = "<unknown>") -> CodeType: raise NotImplementedError
+def f_compile(text: str, file_name: str = "<unknown>", debug=0) -> CodeType: raise NotImplementedError
 
 
 @overload
-def f_compile(file: TextIO, file_name: str = None) -> CodeType: raise NotImplementedError
+def f_compile(file: TextIO, file_name: str = None, debug=0) -> CodeType: raise NotImplementedError
 
 
-def f_compile(text, file_name=None) -> CodeType:
+def f_compile(text, file_name=None, debug=0) -> CodeType:
     if file_name is None:
         try:
             file_name = text.name
@@ -81,27 +81,36 @@ def f_compile(text, file_name=None) -> CodeType:
         text = text.read()
     except AttributeError:
         pass
-    tree = FLarkTransformer(FASTTransformer()).transform(f.parse(text))
+    tree = f.parse(text)
+    if debug > 0:
+        from lark.tree import pydot__tree_to_png
+        pydot__tree_to_png(tree, 'debug.png')
+    tree = FLarkTransformer(FASTTransformer()).transform(tree)
     return compile(tree, file_name, 'exec', dont_inherit=False)
 
 
 @overload
-def f_eval(code: CodeType, argv: Tuple[str, ...] = None, f_locals: Dict[str, Any] = None): raise NotImplementedError
+def f_eval(code: CodeType, argv: Tuple[str, ...] = None, f_locals: Dict[str, Any] = None, debug=0):
+    raise NotImplementedError
 
 
 @overload
 def f_eval(code: Union[TextIO, str], argv: Tuple[str, ...] = None, f_locals: Dict[str, Any] = None,
-           file_name: str = None):
+           file_name: str = None, debug=0):
     raise NotImplementedError
 
 
-def f_eval(code, argv=None, f_locals=None, file_name=None):
+def f_eval(code, argv=None, f_locals=None, file_name=None, debug=0):
     if not isinstance(code, CodeType):
-        code = f_compile(code, file_name)
+        code = f_compile(code, file_name, debug - 1)
     elif file_name is not None:
         warn('`file_name` for already compiled code. `file_name` will be ignored.')
     if argv is None:
         argv = (file_name,)
+    if debug:
+        import uncompyle6
+        uncompyle6.code_deparse(code)
+        print()
     f_globals['...'] = argv
     eval(code, f_globals, f_locals)
 
