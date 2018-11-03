@@ -205,5 +205,9 @@ do [
 ];
 
 do [
+  print(a:="Inline Semicolon";a)
+];
+
+do [
   print "No semicolon"
 ]

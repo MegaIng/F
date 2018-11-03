@@ -1,8 +1,10 @@
-file: _statements _EOI
+file: _value [";"] _EOI
 
-_statements: _value (";" _value)* [";"]
-_value: assignment|infix_operation_1
-assignment: NAME ":=" _value
+_value: semicolon_operation
+
+!?semicolon_operation: (assignment|infix_operation_1) (";" (assignment|infix_operation_1))*
+
+assignment: NAME ":=" infix_operation_1
 
 !?infix_operation_1: infix_operation_2 ("<-" infix_operation_2)*
 !?infix_operation_2: infix_operation_3 (("<"|"<="|"="|">="|">") infix_operation_3)*
@@ -29,10 +31,10 @@ simple_call: escaped_value escaped_value+
 // ec = extended_call
 extended_call: escaped_value escaped_value* ec_parameters escaped_value* ec_code_block
 ec_parameters: "|" (NAME "(" _value ")")* NAME* "|"
-ec_code_block: "[" _statements "]"
+ec_code_block: "[" _value [";"] "]"
 
 list: "{" escaped_value* "}"
-code_block: "[" [parameters] _statements "]"
+code_block: "[" [parameters] _value [";"] "]"
 parameters: "|" NAME* [NAMED_ELLIPSIS|ELLIPSIS] "|"
 
 

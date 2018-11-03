@@ -358,7 +358,7 @@ def f_compile(data: str, debug=0) -> CodeBlock:
     tree = f.parse(data)
     if debug > 0:
         from lark.tree import pydot__tree_to_png
-        pydot__tree_to_png(debug, 'debug.png')
+        pydot__tree_to_png(tree, 'debug.png')
     return FLarkTransformer(FInterpreterTransformer()).transform(tree)
 
 

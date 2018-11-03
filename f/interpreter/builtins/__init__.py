@@ -48,6 +48,11 @@ f_constant('false', Boolean._false_value)
 f_constant('Null', Null)
 
 
+@f_function(";")
+def _semicolon(*values):
+    return values[-1]
+
+
 @f_function
 def reference(data: Value) -> Value:
     return Reference(data)

@@ -111,6 +111,11 @@ def or_(*args):
     return any(arg() if isinstance(arg, Callable) else arg for arg in args)
 
 
+@f_function(";")
+def _semicolon(*values):
+    return values[-1]
+
+
 @f_function("do")
 def do(fun, *args):
     return fun(*args)

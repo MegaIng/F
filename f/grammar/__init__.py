@@ -102,6 +102,9 @@ class BaseFLarkTransformer(LarkTransformer):
     def infix_operation_6(self, children):
         return self.infix_operation(children)
 
+    def semicolon_operation(self, children):
+        return self.infix_operation(children)
+
     def simple_call(self, children):
         raise NotImplementedError
 
@@ -174,7 +177,8 @@ class FLarkTransformer(BaseFLarkTransformer):
         if len(children) == 1:
             return self.transformer.variadic_value(self.transformer.name(children[0].value))
         else:
-            return self.transformer.variadic_value(children[1])
+            _, _, v, _ = children
+            return self.transformer.variadic_value(v)
 
     def code_block(self, children):
         if isinstance(children[0], _parameters):
