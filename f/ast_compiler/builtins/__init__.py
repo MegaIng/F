@@ -147,14 +147,14 @@ def print_(*args):
     return Null
 
 
-@f_function
-def withOpenFile(action, file_name, mode):
+@f_function("withOpenFile")
+def with_open_file(action, file_name, mode):
     with open(file_name, mode) as f:
         return action(f)
 
 
-@f_function
-def writeLine(f, line):
+@f_function("writeLine")
+def write_line(f, line):
     f.write(line + "\n")
     return Null
 

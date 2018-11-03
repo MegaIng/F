@@ -1,4 +1,4 @@
-Copyed from [@ac1235](https://github.com/ac1235) [github.io site](https://github.com/ac1235/ac1235.github.io/tree/master/md) for use as lookup. **I dont own any of this.**
+Copied from [@ac1235](https://github.com/ac1235) [github.io site](https://github.com/ac1235/ac1235.github.io/tree/master/md) for use as lookup. **I don't own any of this.**
 
 # The Design Of F
 

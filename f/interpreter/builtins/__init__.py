@@ -179,14 +179,14 @@ class IOReference(Value):
         return self
 
 
-@f_function
-def withOpenFile(action: CodeBlock, file_name: String, mode: String) -> Value:
+@f_function("withOpenFile")
+def with_open_file(action: CodeBlock, file_name: String, mode: String) -> Value:
     with open(file_name.data, mode.data) as f:
         return action.call((IOReference(f),))
 
 
-@f_function
-def writeLine(f: IOReference, line: String) -> Value:
+@f_function("writeLine")
+def write_line(f: IOReference, line: String) -> Value:
     f.file.write(line.data + "\n")
     return Null
 

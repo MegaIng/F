@@ -39,8 +39,7 @@ class Interpreter:
 
     @classmethod
     def remove_frame(cls):
-        f = cls.frames.pop()
-        return f
+        return cls.frames.pop()
 
     @classmethod
     def set(cls, name: str, v: Value):
@@ -104,7 +103,8 @@ class Call(Value):
         self.args = args
 
     def __repr__(self):
-        return f"{self.fun!r}({', '.join(repr(a) for a in self.args)})"
+        args = ', '.join(repr(a) for a in self.args)
+        return f"{self.fun!r}({args})"
 
     def call(self, args: Tuple[Value, ...]):
         return self.get().call(args)
@@ -138,7 +138,8 @@ class List(Value):
         self.elements = tuple(args)
 
     def __repr__(self):
-        return f"[{', '.join(repr(a) for a in self.elements)}]"
+        elements = ', '.join(repr(a) for a in self.elements)
+        return f"[{elements}]"
 
     def call(self, args: Tuple[Value, ...]):
         raise TypeError
@@ -308,9 +309,9 @@ def f_function(arg: Union[Callable, str]):
         return ret
     else:
         def inner(arg1: Callable):
-            ret = BuiltinFunction(arg1, arg)
-            Interpreter.set(ret.name, ret)
-            return ret
+            func = BuiltinFunction(arg1, arg)
+            Interpreter.set(func.name, func)
+            return func
 
         return inner
 

@@ -1,7 +1,7 @@
 import ast
 from collections import namedtuple
 from types import CodeType
-from typing import Tuple, List, overload, TextIO, Dict, Any, Union
+from typing import Tuple, List, overload, TextIO, Dict, Any, Union, Optional
 from warnings import warn
 
 import f
@@ -12,7 +12,7 @@ _varpar = namedtuple("_vararg", "content")
 
 
 class FASTTransformer(f.BaseFTransformer):
-    def make_statements(self, nodes: Tuple[Tuple[Tuple[ast.AST, ...], ast.AST], ...]) -> List[ast.AST]:
+    def make_statements(self, nodes: Tuple[Tuple[Tuple[ast.AST, ...], Optional[ast.AST]], ...]) -> List[ast.AST]:
         return [n for st, e in nodes for n in ((*st, ast.Expr(e)) if e is not None else st)]
 
     def string(self, content: str):
@@ -76,7 +76,7 @@ def f_compile(text, file_name=None, debug=0) -> CodeType:
         try:
             file_name = text.name
         except AttributeError:
-            file_name = "<unknwon>"
+            file_name = "<unknown>"
     try:
         text = text.read()
     except AttributeError:
