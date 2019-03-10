@@ -12,4 +12,13 @@ An Implementation of F by @ac1235 (https://ac1235.github.io/f.html)
 
 * install the latest version of [python 3 (at least 3.7)](https://www.python.org/downloads/)
 * execute `pip install lark-parser`
-* execute `python f.py test.f`
+
+### `f.py`
+ 
+ `f [-h] [-m {a,i,c}] [program] argv*`
+ 
+ * `program` selects the file to be run. If not present, will start a REPL.
+ * `-m`/`--mode` selects a mode on ho to handle the input
+   * `a`/`ast` chooses the to ast compiler. The default
+   * `i`/`interpreter` chooses the interpreter. The slowest option. Should get extended with a debugger
+   * `c`/`compiler` chooses the to C compiler. Can not run a REPL or take argvs, but generates a executable (currently only on windows correctly)
