@@ -45,8 +45,8 @@ class FASTTransformer(f.BaseFTransformer):
         statements = (*statements, ((*return_value[0], ast.Return(return_value[1])), None))
         statements = self.make_statements(statements)
         self._counter += 1
-        return ((ast.FunctionDef(f"_{self._counter-1}", parameters, statements, []),),
-                ast.Name(f"_{self._counter-1}", ast.Load()))
+        return ((ast.FunctionDef(f"_{self._counter - 1}", parameters, statements, []),),
+                ast.Name(f"_{self._counter - 1}", ast.Load()))
 
     def variadic_value(self, value):
         return value[0], ast.Starred(value[1], ast.Load())
@@ -86,7 +86,8 @@ def f_compile(text, file_name=None, debug=0) -> CodeType:
         from lark.tree import pydot__tree_to_png
         pydot__tree_to_png(tree, 'debug.png')
     tree = FLarkTransformer(FASTTransformer()).transform(tree)
-    return compile(tree, file_name, 'exec', dont_inherit=False)
+    co = compile(tree, file_name, 'exec', dont_inherit=False)
+    return co
 
 
 @overload

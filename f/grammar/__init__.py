@@ -77,6 +77,8 @@ class BaseFLarkTransformer(LarkTransformer):
                 return self.ev_string(c.value)
             elif c.type == "NUMBER":
                 return self.ev_number(c.value)
+            elif c.type == "_ESCAPED_OPERATOR":
+                return self.ev_name(c.value[1:-1])
             else:
                 return self.ev_name(c.value)
         return c
@@ -177,7 +179,7 @@ class FLarkTransformer(BaseFLarkTransformer):
         if len(children) == 1:
             return self.transformer.variadic_value(self.transformer.name(children[0].value))
         else:
-            _, _, v, _ = children
+            _, v, _ = children
             return self.transformer.variadic_value(v)
 
     def code_block(self, children):

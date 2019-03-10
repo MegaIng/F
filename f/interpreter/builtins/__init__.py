@@ -149,7 +149,7 @@ def mul(*args: Number) -> Value:
 
 @f_function("**")
 def mul(*args: Number) -> Value:
-    return Number(reduce(operator.mul, (arg.number for arg in args)))
+    return Number(reduce(operator.pow, (arg.number for arg in args)))
 
 
 @f_function("-")
