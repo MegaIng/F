@@ -1,9 +1,9 @@
-import subprocess
 from pathlib import Path
 from typing import Tuple
 
 from f.c_compiler.fast import CompilerContext, _walk_ast, FVariadicValue
 from f.grammar import BaseFTransformer, FLarkTransformer, parse
+from general_c_compiler import get_compiler
 from .fast import FName, FAST, FAssignment, FCall, FCodeBlock, FList, FModule, FNumber, FString, FValue
 
 
@@ -50,10 +50,9 @@ class ASTTransformer(BaseFTransformer):
 
 
 def f_compile(source: str, out_file: Path = None):
-    if out_file is None:
-        out_file = (Path(".") / "main.exe").resolve()
     ast: FModule = FLarkTransformer(ASTTransformer()).transform(parse(source))
     c_source = ast.generate_c()
     with (Path(__file__).with_name('main.c')).open('w') as f:
         f.write(c_source)
-    subprocess.run(["gcc", "-o", str(out_file), str(Path(__file__).with_name('main.c'))])
+    compiler = get_compiler()
+    compiler.compile_to_executable(Path(__file__).with_name('main.c'), out_file)
